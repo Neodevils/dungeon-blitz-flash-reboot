@@ -42,7 +42,6 @@ _raw_level_config  = {
     "--------FELBRIDGE------------": "",
     "BridgeTown": "LevelsBT.swf/a_Level_BridgeTown 10 10 false",
     "BridgeTownHard": "LevelsBT.swf/a_Level_BridgeTown 25 10 false Hard",
-	"BridgeTownEast": "LevelsBT.swf/a_Room_BTZ_BridgeTownEast 25 10 false",
     "BT_Mission1": "LevelsBT.swf/a_Level_BTMission1 11 11 true",
     "BT_Mission1Hard": "LevelsBT.swf/a_Level_BTMission1 26 11 true Hard",
     "BT_Mission2": "LevelsBT.swf/a_Level_BTMission2 12 12 true",
