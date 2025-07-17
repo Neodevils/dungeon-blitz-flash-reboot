@@ -261,6 +261,32 @@ def make_character_dict_from_tuple(character):
                 "stateVersion": 5
             }
         ],
+        # Position tracking data
+        "positionTracking": {
+            "lastWorldPosition": {
+                "x": 360.0,
+                "y": 1458.99,
+                "z": 0.0,
+                "level": "BridgeTown",
+                "timestamp": None
+            },
+            "currentPosition": {
+                "x": 360.0,
+                "y": 1458.99,
+                "z": 0.0,
+                "level": "BridgeTown",
+                "timestamp": None
+            },
+            "missionEntryPosition": {
+                "x": None,
+                "y": None,
+                "z": None,
+                "level": None,
+                "timestamp": None,
+                "missionEntered": None
+            },
+            "positionLoggingEnabled": True
+        },
         "guild": {
             "name": "KnightsOfValor",
             "rank": 2,

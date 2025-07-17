@@ -23,6 +23,10 @@ from static_server import start_static_server
 from entity import Send_Entity_Data
 from Entity_Data import load_npc_data_for_level
 from level_config import DOOR_MAP, LEVEL_CONFIG
+from position_tracker import (
+    start_position_logging, stop_position_logging, save_pre_mission_position,
+    restore_pre_mission_position, update_player_position, is_mission_level
+)
 
 HOST = "127.0.0.1"
 PORTS = [8080]
@@ -152,6 +156,8 @@ class ClientSession:
         return tk
 
     def cleanup(self):
+        # Stop position tracking before cleanup
+        stop_position_logging(self)
         try:
             self.conn.close()
         except:
@@ -377,6 +383,9 @@ def handle_client(session: ClientSession):
                         "hp": char.get("hp", 100),
                         "max_hp": char.get("max_hp", 100)
                     }
+
+                    # Start position tracking for this session
+                    start_position_logging(session)
                     welcome = Player_Data_Packet(char, transfer_token=token)
                     conn.sendall(welcome)
                     session.clientEntID = token
@@ -831,6 +840,18 @@ def handle_client(session: ClientSession):
                 else:
                     level_name = mapped
 
+                # Position tracking for mission entry/exit
+                if level_name:
+                    # Check if entering a mission from non-mission level
+                    if is_mission_level(level_name) and not is_mission_level(orig):
+                        print(f"[POSITION_TRACKER] Player entering mission: {orig} -> {level_name}")
+                        save_pre_mission_position(session, level_name)
+
+                    # Check if exiting a mission to non-mission level
+                    elif not is_mission_level(level_name) and is_mission_level(orig):
+                        print(f"[POSITION_TRACKER] Player exiting mission: {orig} -> {level_name}")
+                        # Position will be restored in the transfer handling
+
                 if not level_name:
                     error_msg = f"Door {door_id} not found in {session.current_level}"
                     error_bytes = error_msg.encode("utf-8")
@@ -984,6 +1005,22 @@ def handle_client(session: ClientSession):
                 pending_world[token] = transfer_data
                 swf_path, map_id, base_id, is_inst = LEVEL_CONFIG[level_name]
 
+                # Check if we should restore position from mission exit
+                new_has_coord = False
+                new_x, new_y = 0, 0
+
+                # If exiting a mission to a non-mission level, try to restore position
+                current_level = getattr(session, 'current_level', '')
+                if is_mission_level(current_level) and not is_mission_level(level_name):
+                    restored_position = restore_pre_mission_position(session)
+                    if restored_position:
+                        rest_x, rest_y, rest_z, rest_level = restored_position
+                        # Only use restored position if the target level matches
+                        if rest_level == level_name:
+                            new_has_coord = True
+                            new_x, new_y = int(rest_x), int(rest_y)
+                            print(f"[POSITION_TRACKER] Restoring position: X={new_x}, Y={new_y}")
+
                 pkt21 = build_enter_world_packet(
                     transfer_token=token,
                     old_level_id=0, old_swf="", has_old_coord=False, old_x=0, old_y=0,
@@ -991,7 +1028,7 @@ def handle_client(session: ClientSession):
                     new_level_swf=swf_path, new_map_lvl=map_id,
                     new_base_lvl=base_id, new_internal=level_name,
                     new_moment="", new_alter="", new_is_inst=is_inst,
-                    new_has_coord=False, new_x=0, new_y=0,  # Let the game use default spawn
+                    new_has_coord=new_has_coord, new_x=new_x, new_y=new_y,
                     char=transfer_data
                 )
                 conn.sendall(pkt21)
